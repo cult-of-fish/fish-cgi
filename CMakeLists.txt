@@ -7,6 +7,12 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# https://discourse.nixos.org/t/get-clangd-to-find-standard-headers-in-nix-shell/11268/10
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+  ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 option(FETCH_FISH "Fetch fish-shell from the internet" ON)
 
 if($<BOOL:$FETCH_FISH>)
@@ -40,3 +46,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   fish-shell
   ${CMAKE_BINARY_DIR}/_deps
   ${CMAKE_BINARY_DIR}/_deps/fish-shell-build)
+
+install(TARGETS ${PROJECT_NAME})
