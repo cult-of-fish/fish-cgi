@@ -84,19 +84,34 @@ int main() {
 		cout.rdbuf(&fcgi_cout);
 		cerr.rdbuf(&fcgi_cerr);
 
-		const char *script_path = FCGX_GetParam(
-				"SCRIPT_FILENAME", request.envp);
-		size_t path_size = strlen(script_path);
+		for (int i = 0; request.envp[i] != NULL; ++i) {
+			wcstring wname;
+			// SCRIPT_FILENAME=file.fish\0
+			const char *var = request.envp[i];
+			size_t var_len = strlen(var);
 
-		wcstring wscript_path;
-		utf8_to_wchar(script_path, path_size, &wscript_path, 0);
+			char *delim;
+			for (delim = request.envp[i];
+					*delim != '=' && delim < var + var_len;
+					++delim)
+				;
 
-		parser.vars().set(L"SCRIPT_FILENAME", ENV_DEFAULT,
-				{wscript_path});
+			utf8_to_wchar(var, delim - var, &wname, 0);
+			if (*delim == '=') {
+				wcstring wvalue;
+				const char *val = delim + 1;
+				utf8_to_wchar(val, var + var_len - val, &wvalue,
+						0);
+				parser.vars().set(wname, ENV_DEFAULT, {wvalue});
+			} else { // TODO(tny): will this ever happen?
+				parser.vars().set(wname, ENV_DEFAULT, {L""});
+			}
+		}
 
 		auto filler = io_bufferfill_t::create();
 		parser.eval(L". $SCRIPT_FILENAME", io_chain_t{filler});
-		separated_buffer_t buffer = io_bufferfill_t::finish(std::move(filler));
+		separated_buffer_t buffer
+				= io_bufferfill_t::finish(std::move(filler));
 		cout << buffer.newline_serialized();
 	}
 
